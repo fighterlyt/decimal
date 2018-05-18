@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"math/rand"
+	"github.com/globalsign/mgo/bson"
 	"time"
 )
 
@@ -2282,5 +2284,37 @@ func TestRoundBankAnomaly(t *testing.T) {
 	bRounded := b.RoundBank(0)
 	if !bRounded.Equal(expected) {
 		t.Errorf("Expected bank rounding %s to equal %s, but it was %s", b, expected, bRounded)
+	}
+}
+
+func TestDecimal_GetBSON(t *testing.T) {
+	r:=rand.New(rand.NewSource(time.Now().UnixNano()))
+	count:=1000
+
+	type testStruct struct{
+		Value Decimal
+	}
+	for i:=0;i<count;i++{
+
+		value:=testStruct{
+			Value:NewFromFloat(r.Float64()),
+		}
+		if data,err:=bson.Marshal(value);err!=nil{
+			t.Error("序列化错误"+err.Error())
+			t.FailNow()
+		}else{
+			another:=&testStruct{}
+			if err=bson.Unmarshal(data,another);err!=nil{
+				t.Error("反序列化错误"+err.Error())
+				t.FailNow()
+
+			}else{
+				if !another.Value.Equal(value.Value){
+					t.Errorf("值不相等")
+					t.FailNow()
+
+				}
+			}
+		}
 	}
 }

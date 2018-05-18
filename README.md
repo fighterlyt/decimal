@@ -13,6 +13,7 @@ NOTE: can "only" represent numbers with a maximum of 2^31 digits after the decim
  * division with specified precision
  * database/sql serialization/deserialization
  * json and xml serialization/deserialization
+ * bson serialization/deserialization as string, with github.com/globalSign/mgo
 
 ## Install
 

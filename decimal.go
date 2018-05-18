@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"github.com/globalsign/mgo/bson"
 )
 
 // DivisionPrecision is the number of decimal places in the result when it
@@ -872,6 +873,25 @@ func (d Decimal) MarshalBinary() (data []byte, err error) {
 	// Return the byte array
 	data = append(v1, v2...)
 	return
+}
+
+// GetBSON implements the bson.Getter interface
+func (d Decimal) GetBSON() (interface{}, error) {
+	// Pass through string to create Mongo Decimal128 type
+	return d.String(),nil
+}
+
+// SetBSON implements the bson.Setter interface
+func (d *Decimal) SetBSON(raw bson.Raw) error {
+	// Unmarshal as Mongo Decimal128 first then pass through string to obtain Decimal
+	var data string
+	berr := raw.Unmarshal(&data)
+	if berr != nil {
+		return berr
+	}
+	var err error
+	*d,err=NewFromString(data)
+	return err
 }
 
 // Scan implements the sql.Scanner interface for database deserialization.
