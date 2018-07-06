@@ -23,8 +23,10 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"sort"
 	"strconv"
 	"strings"
+
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -878,7 +880,7 @@ func (d Decimal) MarshalBinary() (data []byte, err error) {
 // GetBSON implements the bson.Getter interface
 func (d Decimal) GetBSON() (interface{}, error) {
 	// Pass through string to create Mongo Decimal128 type
-	return d.String(),nil
+	return d.String(), nil
 }
 
 // SetBSON implements the bson.Setter interface
@@ -890,7 +892,7 @@ func (d *Decimal) SetBSON(raw bson.Raw) error {
 		return berr
 	}
 	var err error
-	*d,err=NewFromString(data)
+	*d, err = NewFromString(data)
 	return err
 }
 
@@ -1066,6 +1068,20 @@ func Avg(first Decimal, rest ...Decimal) Decimal {
 	count := New(int64(len(rest)+1), 0)
 	sum := Sum(first, rest...)
 	return sum.Div(count)
+}
+
+//Mean 中位值
+func Mean(first Decimal, rest ...Decimal) Decimal {
+	rest = append(rest, first)
+	sort.Slice(rest, func(i, j int) bool {
+		return rest[i].LessThan(rest[j])
+	})
+
+	if len(rest)%2 == 0 {
+		return rest[len(rest)/2].Add(rest[len(rest)/2-1]).Mul(New(5, -1))
+	}
+	return rest[len(rest)+1/2-1]
+
 }
 
 func min(x, y int32) int32 {

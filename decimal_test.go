@@ -6,14 +6,15 @@ import (
 	"encoding/xml"
 	"math"
 	"math/big"
+	"math/rand"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
-	"math/rand"
-	"github.com/globalsign/mgo/bson"
 	"time"
+
+	"github.com/globalsign/mgo/bson"
 )
 
 type testEnt struct {
@@ -2288,28 +2289,28 @@ func TestRoundBankAnomaly(t *testing.T) {
 }
 
 func TestDecimal_GetBSON(t *testing.T) {
-	r:=rand.New(rand.NewSource(time.Now().UnixNano()))
-	count:=1000
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	count := 1000
 
-	type testStruct struct{
+	type testStruct struct {
 		Value Decimal
 	}
-	for i:=0;i<count;i++{
+	for i := 0; i < count; i++ {
 
-		value:=testStruct{
-			Value:NewFromFloat(r.Float64()),
+		value := testStruct{
+			Value: NewFromFloat(r.Float64()),
 		}
-		if data,err:=bson.Marshal(value);err!=nil{
-			t.Error("序列化错误"+err.Error())
+		if data, err := bson.Marshal(value); err != nil {
+			t.Error("序列化错误" + err.Error())
 			t.FailNow()
-		}else{
-			another:=&testStruct{}
-			if err=bson.Unmarshal(data,another);err!=nil{
-				t.Error("反序列化错误"+err.Error())
+		} else {
+			another := &testStruct{}
+			if err = bson.Unmarshal(data, another); err != nil {
+				t.Error("反序列化错误" + err.Error())
 				t.FailNow()
 
-			}else{
-				if !another.Value.Equal(value.Value){
+			} else {
+				if !another.Value.Equal(value.Value) {
 					t.Errorf("值不相等")
 					t.FailNow()
 
@@ -2317,4 +2318,12 @@ func TestDecimal_GetBSON(t *testing.T) {
 			}
 		}
 	}
+}
+func TestMean(t *testing.T) {
+	values := []int64{23, 29, 20, 32, 23, 21, 33, 25}
+	deciamls := make([]Decimal, 0, len(values))
+	for _, value := range values {
+		deciamls = append(deciamls, New(value, 0))
+	}
+	println(Mean(deciamls[0], deciamls[1:]...).String())
 }
