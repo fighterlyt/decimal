@@ -106,6 +106,9 @@ func NewFromBigInt(value *big.Int, exp int32) Decimal {
 //     d2, err := NewFromString(".0001")
 //
 func NewFromString(value string) (Decimal, error) {
+	if value==""{
+		return Zero,nil
+	}
 	originalInput := value
 	var intString string
 	var exp int64
@@ -890,6 +893,9 @@ func (d *Decimal) SetBSON(raw bson.Raw) error {
 	berr := raw.Unmarshal(&data)
 	if berr != nil {
 		return berr
+	}
+	if data==""{
+		data="0"
 	}
 	var err error
 	*d, err = NewFromString(data)
