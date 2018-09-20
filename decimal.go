@@ -941,8 +941,12 @@ func (d Decimal) Value() (driver.Value, error) {
 // UnmarshalText implements the encoding.TextUnmarshaler interface for XML
 // deserialization.
 func (d *Decimal) UnmarshalText(text []byte) error {
-	str := string(text)
 
+	str := string(text)
+	if str==""{
+		*d=Zero
+		return nil
+	}
 	dec, err := NewFromString(str)
 	*d = dec
 	if err != nil {
@@ -1111,7 +1115,7 @@ func unquoteIfQuoted(value interface{}) (string, error) {
 	}
 
 	// If the amount is quoted, strip the quotes
-	if len(bytes) > 2 && bytes[0] == '"' && bytes[len(bytes)-1] == '"' {
+	if len(bytes) >= 2 && bytes[0] == '"' && bytes[len(bytes)-1] == '"' {
 		bytes = bytes[1 : len(bytes)-1]
 	}
 	return string(bytes), nil
