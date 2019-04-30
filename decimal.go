@@ -21,13 +21,14 @@ import (
 	"database/sql/driver"
 	"encoding/binary"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"math"
 	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // DivisionPrecision is the number of decimal places in the result when it
@@ -106,8 +107,8 @@ func NewFromBigInt(value *big.Int, exp int32) Decimal {
 //     d2, err := NewFromString(".0001")
 //
 func NewFromString(value string) (Decimal, error) {
-	if value==""{
-		return Zero,nil
+	if value == "" {
+		return Zero, nil
 	}
 	originalInput := value
 	var intString string
@@ -881,25 +882,35 @@ func (d Decimal) MarshalBinary() (data []byte, err error) {
 }
 
 // GetBSON implements the bson.Getter interface
-func (d Decimal) GetBSON() (interface{}, error) {
+func (d Decimal) MarshalBSON() (interface{}, error) {
 	// Pass through string to create Mongo Decimal128 type
-	return d.String(), nil
+	return primitive.ParseDecimal128(d.String())
 }
 
 // SetBSON implements the bson.Setter interface
-func (d *Decimal) SetBSON(raw bson.Raw) error {
+func (d *Decimal) UnmarshalBSON(data []byte) error {
+	raw := bson.Raw(data)
 	// Unmarshal as Mongo Decimal128 first then pass through string to obtain Decimal
-	var data string
-	berr := raw.Unmarshal(&data)
-	if berr != nil {
-		return berr
+	values, err := raw.Values()
+	if err != nil {
+		return err
+	} else {
+		if len(values) == 0 {
+			return nil
+		} else {
+			if data, ok := values[0].Decimal128OK(); ok {
+				str := data.String()
+				if str == "" {
+					str = "0"
+				}
+				*d, err = NewFromString(str)
+				return err
+			} else {
+				return fmt.Errorf("错误的类型[%s],不是Decimal", values[0].Type.String())
+			}
+		}
 	}
-	if data==""{
-		data="0"
-	}
-	var err error
-	*d, err = NewFromString(data)
-	return err
+
 }
 
 // Scan implements the sql.Scanner interface for database deserialization.
@@ -943,8 +954,8 @@ func (d Decimal) Value() (driver.Value, error) {
 func (d *Decimal) UnmarshalText(text []byte) error {
 
 	str := string(text)
-	if str==""{
-		*d=Zero
+	if str == "" {
+		*d = Zero
 		return nil
 	}
 	dec, err := NewFromString(str)
