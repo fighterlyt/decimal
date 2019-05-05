@@ -882,13 +882,21 @@ func (d Decimal) MarshalBinary() (data []byte, err error) {
 }
 
 // GetBSON implements the bson.Getter interface
-func (d Decimal) MarshalBSON() (interface{}, error) {
+func (d Decimal) MarshalBSON() ([]byte, error) {
 	// Pass through string to create Mongo Decimal128 type
-	return primitive.ParseDecimal128(d.String())
+	value, err := primitive.ParseDecimal128(d.String())
+	if err != nil {
+		return nil, err
+	}
+	result, err := bson.Marshal(value)
+	println("marshal")
+	return result, err
+
 }
 
 // SetBSON implements the bson.Setter interface
 func (d *Decimal) UnmarshalBSON(data []byte) error {
+	println("data", string(data))
 	raw := bson.Raw(data)
 	// Unmarshal as Mongo Decimal128 first then pass through string to obtain Decimal
 	values, err := raw.Values()
@@ -896,10 +904,12 @@ func (d *Decimal) UnmarshalBSON(data []byte) error {
 		return err
 	} else {
 		if len(values) == 0 {
+			println("null value")
 			return nil
 		} else {
 			if data, ok := values[0].Decimal128OK(); ok {
 				str := data.String()
+				println("str", str)
 				if str == "" {
 					str = "0"
 				}

@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"encoding/xml"
+	"go.mongodb.org/mongo-driver/bson"
 	"math"
 	"math/big"
 	"math/rand"
@@ -13,8 +14,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/globalsign/mgo/bson"
 )
 
 type testEnt struct {
@@ -275,6 +274,7 @@ func TestRequireFromStringErrs(t *testing.T) {
 	if err == nil {
 		t.Errorf("panic expected when parsing %s", s)
 	}
+	t.Log(d)
 }
 
 func TestNewFromFloatWithExponent(t *testing.T) {
@@ -2288,7 +2288,7 @@ func TestRoundBankAnomaly(t *testing.T) {
 	}
 }
 
-func TestDecimal_GetBSON(t *testing.T) {
+func TestDecimal_MarshalBSON(t *testing.T) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	count := 1000
 
@@ -2298,12 +2298,13 @@ func TestDecimal_GetBSON(t *testing.T) {
 	for i := 0; i < count; i++ {
 
 		value := testStruct{
-			Value: NewFromFloat(r.Float64()),
+			Value: NewFromFloat(r.Float64()).Round(8),
 		}
 		if data, err := bson.Marshal(value); err != nil {
 			t.Error("序列化错误" + err.Error())
 			t.FailNow()
 		} else {
+			t.Log("序列化结果", string(data))
 			another := &testStruct{}
 			if err = bson.Unmarshal(data, another); err != nil {
 				t.Error("反序列化错误" + err.Error())
@@ -2311,7 +2312,7 @@ func TestDecimal_GetBSON(t *testing.T) {
 
 			} else {
 				if !another.Value.Equal(value.Value) {
-					t.Errorf("值不相等")
+					t.Errorf("值不相等[%s][%s]", another.Value.String(), value.Value.String())
 					t.FailNow()
 
 				}
